@@ -113,9 +113,10 @@ static const ONNX_NAMESPACE::GraphProto CreateSubgraph(const RunOptions& options
        |             |                           |                          [Constant]
   iter_num_float  sum_0                          |          sum_0             /
        |           / | \                         |              \            /
-    [Concat]------/  |  \---------------------[Concat]           \--[Less]--/
-       |             |                           |                     |
-       |         [Identity]                      |                     |
+  (if scalar)     /  |  \---------------------[Concat]           \--[Less]--/
+  [Unsqueeze]    /   |                           |                     |
+       |        /    |                           |                     |
+    [Concat]---/ [Identity]                      |                     |
        |             |                           |                     |
    loop_out_0   loop_var_0_out             loop_var_1_out           cond_out
 
@@ -145,10 +146,6 @@ static const ONNX_NAMESPACE::GraphProto CreateSubgraph(const RunOptions& options
   TypeProto float_scalar;
   float_scalar.mutable_tensor_type()->set_elem_type(TensorProto_DataType_FLOAT);
   float_scalar.mutable_tensor_type()->mutable_shape();
-  // auto* mutable_dim = float_scalar.mutable_tensor_type()->mutable_shape()->add_dim();
-  // if (include_dim_value) {
-  //   mutable_dim->set_dim_value(1);
-  // }
 
   TypeProto float_tensor;
   float_tensor.mutable_tensor_type()->set_elem_type(TensorProto_DataType_FLOAT);
