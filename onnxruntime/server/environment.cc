@@ -5,6 +5,29 @@
 #include "environment.h"
 #include "core/session/onnxruntime_cxx_api.h"
 
+#if OPENVINO_CONFIG_CPU_FP32
+#define BACKEND_OPENVINO "-OPENVINO_CPU_FP32"
+
+#elif OPENVINO_CONFIG_GPU_FP32
+#define BACKEND_OPENVINO "-OPENVINO_GPU_FP32"
+
+#elif OPENVINO_CONFIG_GPU_FP16
+#define BACKEND_OPENVINO "-OPENVINO_GPU_FP16"
+
+#elif OPENVINO_CONFIG_MYRIAD
+#define BACKEND_OPENVINO "-OPENVINO_MYRIAD"
+
+#elif OPENVINO_CONFIG_VAD_M
+#define BACKEND_OPENVINO "-OPENVINO_VAD_M"
+
+#else
+#define BACKEND_OPENVINO ""
+#endif
+
+#ifdef USE_OPENVINO
+#include "core/providers/openvino/openvino_provider_factory.h"
+#endif
+
 namespace onnxruntime {
 namespace server {
 
@@ -40,10 +63,14 @@ ServerEnvironment::ServerEnvironment(OrtLoggingLevel severity, spdlog::sinks_ini
   spdlog::set_automatic_registration(false);
   spdlog::set_level(Convert(severity_));
   spdlog::initialize_logger(default_logger_);
+
+  #ifdef USE_OPENVINO
+  OrtSessionOptionsAppendExecutionProvider_OpenVINO(options_, "CPU")
+  #endif
 }
 
 void ServerEnvironment::InitializeModel(const std::string& model_path, const std::string& model_name, const std::string& model_version) {
-  auto result = sessions_.emplace(std::piecewise_construct, std::forward_as_tuple(model_name, model_version), std::forward_as_tuple(runtime_environment_, model_path.c_str(), Ort::SessionOptions()));
+  auto result = sessions_.emplace(std::piecewise_construct, std::forward_as_tuple(model_name, model_version), std::forward_as_tuple(runtime_environment_, model_path.c_str(), options_));
 
   if (!result.second) {
     throw Ort::Exception("Model of that name already loaded.", ORT_INVALID_ARGUMENT);
@@ -58,6 +85,7 @@ void ServerEnvironment::InitializeModel(const std::string& model_path, const std
     (iterator->second).output_names.push_back(name);
     allocator.Free(name);
   }
+
 }
 
 const std::vector<std::string>& ServerEnvironment::GetModelOutputNames(const std::string& model_name, const std::string& model_version) const {
