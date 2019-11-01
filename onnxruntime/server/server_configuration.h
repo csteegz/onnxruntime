@@ -39,6 +39,7 @@ class ServerConfiguration {
  public:
   const std::string full_desc = "ONNX Server: host an ONNX model with ONNX Runtime";
   std::string model_path;
+  std::string model_name = "default";
   std::string address = "0.0.0.0";
   unsigned short http_port = 8001;
   unsigned short grpc_port = 50051;
@@ -53,6 +54,7 @@ class ServerConfiguration {
     desc.add_options()("http_port", po::value(&http_port)->default_value(http_port), "HTTP port to listen to requests");
     desc.add_options()("num_http_threads", po::value(&num_http_threads)->default_value(num_http_threads), "Number of http threads");
     desc.add_options()("grpc_port", po::value(&grpc_port)->default_value(grpc_port), "GRPC port to listen to requests");
+    desc.add_options()("model_name", po::value(&model_name)->default_value(model_name), "Model name (for routing)");
   }
 
   // Parses argc and argv and sets the values for the class
